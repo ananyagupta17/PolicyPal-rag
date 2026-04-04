@@ -88,15 +88,24 @@ def store_embeddings_for_text(text: str, source_id: str) -> int:
 
 def ingest_document(document_url: str) -> str:
     """
-    Full ingestion pipeline for a document URL:
-    parse → chunk → embed → store in Pinecone.
+    Full ingestion pipeline for a document URL.
+    Skips re-ingestion if the document was already uploaded before.
     Returns the source_id (used as namespace for querying).
     """
     source_id = generate_source_id(document_url)
 
-    # Wipe old vectors first (critical when switching embedding models)
-    clear_namespace(source_id)
+    # Check if this namespace already has vectors
+    try:
+        stats = index.describe_index_stats()
+        namespaces = stats.get("namespaces", {})
+        if source_id in namespaces and namespaces[source_id].get("vector_count", 0) > 0:
+            print(f"Document already ingested (namespace={source_id}), skipping.")
+            return source_id
+    except Exception as e:
+        print(f"Could not check index stats: {e}")
 
+    # Fresh ingest
+    clear_namespace(source_id)
     text = extract_text(document_url)
     if not text or not text.strip():
         raise ValueError("No extractable text found in the document.")

@@ -13,7 +13,7 @@ if not PINECONE_API_KEY:
     raise ValueError("PINECONE_API_KEY not found in .env file")
 
 INDEX_NAME = "policy-embeddings"
-DIMENSION = 768      # matches Gemini text-embedding-004
+DIMENSION = 3072
 CLOUD = "aws"
 REGION = "us-east-1"
 

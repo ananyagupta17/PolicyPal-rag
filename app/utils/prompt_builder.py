@@ -47,11 +47,12 @@ POLICY EXCERPTS (retrieved based on the question):
 CURRENT QUESTION: {question}
 
 INSTRUCTIONS:
-- Answer using ONLY the policy excerpts above.
+- Answer in a natural, conversational tone — don't just copy text from the excerpts.
+- Rephrase and summarize the relevant information in your own words.
 - If the answer is not in the excerpts, say exactly: "I could not find this information in the document."
-- Be concise and precise. Quote figures and durations exactly as written.
-- Do not make up or infer information not present in the excerpts.
-- If the question refers to something from the conversation history, use that context.
+- Be concise but friendly. You can use 2-3 sentences.
+- Quote specific figures, dates, or names exactly as written when relevant.
+- If the question refers to something from the conversation history, use that context naturally.
 """.strip()
 
     return prompt

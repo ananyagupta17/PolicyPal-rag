@@ -15,6 +15,7 @@ lxml==6.0.0
 
 # Text chunking
 langchain-text-splitters==0.3.9
+langchain
 
 # Utilities
 python-dotenv==1.1.1

@@ -91,9 +91,4 @@ def extract_text(file_path_or_url: str) -> str:
     else:
         raise ValueError(f"Unsupported file type: {ext}")
 
-# Quick local test
-if __name__ == "__main__":
-    sample_url = "https://hackrx.blob.core.windows.net/assets/policy.pdf?sv=2023-01-03&st=2025-07-04T09%3A11%3A24Z&se=2027-07-05T09%3A11%3A00Z&sr=b&sp=r&sig=N4a9OU0w0QXO6AOIBiu4bpl7AXvEZogeT%2FjUHNO7HzQ%3D"
-    result = extract_text(sample_url)
-    print("\n--- Extracted Text (first 2000 chars) ---\n")
-    print(result[:2000])
+

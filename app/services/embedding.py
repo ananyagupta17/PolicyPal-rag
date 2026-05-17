@@ -8,7 +8,7 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-EMBEDDING_MODEL = "gemini-embedding-001"  # 768-dim, free tier
+EMBEDDING_MODEL = "gemini-embedding-001"  # 3072-dim, free tier
 DIMENSION = 3072
 
 embedding_cache = {}
@@ -16,7 +16,7 @@ embedding_cache = {}
 
 def get_embedding(text: str) -> list[float]:
     """
-    Return a 768-dim embedding using Gemini gemini-embedding-001.
+    Return a 3072-dim embedding using Gemini gemini-embedding-001.
     Uses md5-based in-memory cache for repeated inputs.
     """
     text_hash = hashlib.md5(text.encode()).hexdigest()

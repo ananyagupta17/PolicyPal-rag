@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException
+import os
+import tempfile
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List, Dict
 
-from app.services.pinecone_store import ingest_document
+from app.services.pinecone_store import ingest_document, ingest_file
 from app.services.pipeline_qa import answer_question
+
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".eml"}
 
 router = APIRouter()
 
@@ -49,6 +53,36 @@ async def upload_document(request: UploadRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+
+
+@router.post("/upload-file", response_model=UploadResponse)
+async def upload_document_file(file: UploadFile = File(...)):
+    """
+    Ingests an uploaded file (PDF, DOCX, EML) directly — no URL needed.
+    Saves to a temp path, runs the same ingest pipeline, returns session_id.
+    """
+    ext = os.path.splitext(file.filename or "")[-1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type '{ext}'. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        session_id = ingest_file(tmp_path)
+        return UploadResponse(
+            session_id=session_id,
+            message="Document ingested successfully. You can now ask questions."
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ingestion failed: {str(e)}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 @router.post("/chat", response_model=ChatResponse)

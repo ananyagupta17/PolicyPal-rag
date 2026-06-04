@@ -19,6 +19,7 @@ langchain
 
 # Utilities
 python-dotenv==1.1.1
+python-multipart
 pydantic==2.11.7
 requests==2.32.4
 tqdm==4.67.1

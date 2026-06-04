@@ -4,122 +4,193 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PolicyPal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0b0b0e;
+      --surface:      #111116;
+      --surface-2:    #18181f;
+      --surface-3:    #1f1f28;
+      --border:       rgba(255,255,255,0.07);
+      --border-mid:   rgba(255,255,255,0.11);
+      --accent:       #7c6af7;
+      --accent-dim:   rgba(124,106,247,0.12);
+      --accent-focus: rgba(124,106,247,0.4);
+      --text:         #e2e2ea;
+      --text-muted:   #56566a;
+      --text-soft:    #9898ae;
+      --success:      #4ade80;
+      --error:        #f87171;
+    }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 24px 16px;
     }
 
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+
+    /* ── Shell ── */
     .container {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 780px;
+      max-width: 760px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    /* Header */
+    /* ── Header ── */
     .header {
-      background: #1a73e8;
-      color: white;
-      padding: 24px 28px;
+      padding: 20px 26px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
-    .header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      margin-bottom: 4px;
+    .header-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(124,106,247,0.2);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
     }
 
-    .header p {
-      font-size: 0.9rem;
-      opacity: 0.85;
+    .header-text h1 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
     }
 
-    /* Upload section */
+    .header-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* ── Upload ── */
     .upload-section {
-      padding: 24px 28px;
-      border-bottom: 1px solid #e8eaed;
-      background: #fafafa;
+      padding: 20px 26px;
+      border-bottom: 1px solid var(--border);
     }
 
     .upload-tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 12px;
-      border: 1px solid #dadce0;
+      display: inline-flex;
+      gap: 2px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      overflow: hidden;
-      width: fit-content;
+      padding: 3px;
+      margin-bottom: 16px;
     }
 
     .upload-tab {
-      padding: 7px 18px;
-      font-size: 0.82rem;
-      font-weight: 600;
+      padding: 5px 14px;
+      font-size: 0.75rem;
+      font-weight: 500;
       cursor: pointer;
-      background: white;
-      color: #555;
+      background: transparent;
+      color: var(--text-muted);
       border: none;
+      border-radius: 5px;
       transition: background 0.15s, color 0.15s;
+      font-family: inherit;
+      letter-spacing: 0.01em;
     }
 
-    .upload-tab.active { background: #1a73e8; color: white; }
+    .upload-tab.active {
+      background: var(--surface-3);
+      color: var(--text);
+      border: 1px solid var(--border-mid);
+    }
 
     .upload-panel { display: none; }
     .upload-panel.active { display: block; }
 
-    .upload-section label {
+    .field-label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 0.7rem;
       font-weight: 600;
-      color: #444;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       margin-bottom: 8px;
     }
 
     .upload-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .upload-row input[type="text"] {
+    input[type="text"] {
       flex: 1;
-      padding: 10px 14px;
-      border: 1px solid #dadce0;
+      padding: 9px 13px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      color: var(--text);
       outline: none;
-      transition: border 0.2s;
+      transition: border-color 0.18s;
+      font-family: inherit;
     }
 
-    .upload-row input[type="text"]:focus { border-color: #1a73e8; }
+    input[type="text"]::placeholder { color: var(--text-muted); }
+    input[type="text"]:focus { border-color: var(--accent-focus); }
+    input[type="text"]:disabled { opacity: 0.35; }
 
-    .file-drop {
-      border: 2px dashed #dadce0;
+    .btn {
+      padding: 9px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
       border-radius: 8px;
-      padding: 22px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.18s;
+      font-family: inherit;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .btn:hover   { opacity: 0.85; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* File drop zone */
+    .file-drop {
+      border: 1px dashed var(--border-mid);
+      border-radius: 10px;
+      padding: 26px 20px;
       text-align: center;
-      color: #888;
-      font-size: 0.88rem;
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
       position: relative;
     }
 
     .file-drop:hover, .file-drop.drag-over {
-      border-color: #1a73e8;
-      background: #f0f6ff;
-      color: #1a73e8;
+      border-color: var(--accent);
+      background: var(--accent-dim);
     }
 
     .file-drop input[type="file"] {
@@ -131,161 +202,159 @@
       height: 100%;
     }
 
-    .file-drop .file-name {
-      margin-top: 6px;
+    .file-drop-icon {
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+      display: block;
+      opacity: 0.5;
+    }
+
+    .file-drop-text {
       font-size: 0.8rem;
-      color: #1a73e8;
-      font-weight: 600;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    .file-name {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 500;
     }
 
     .file-upload-row {
       display: flex;
-      gap: 10px;
+      justify-content: flex-end;
       margin-top: 10px;
     }
 
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-    }
-
-    .btn-primary { background: #1a73e8; color: white; }
-    .btn-primary:hover { background: #1558b0; }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
+    /* Status */
     .status {
       margin-top: 10px;
-      font-size: 0.83rem;
-      min-height: 18px;
+      font-size: 0.75rem;
+      min-height: 16px;
+      color: var(--text-muted);
     }
 
-    .status.success { color: #188038; }
-    .status.error   { color: #c5221f; }
-    .status.loading { color: #1a73e8; }
+    .status.success { color: var(--success); }
+    .status.error   { color: var(--error); }
+    .status.loading { color: var(--text-soft); }
 
-    /* Chat section */
+    /* ── Chat ── */
     .chat-section {
       display: flex;
       flex-direction: column;
-      height: 480px;
+      height: 460px;
     }
 
     .chat-window {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 28px;
+      padding: 20px 26px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
     }
 
     .empty-state {
-      text-align: center;
-      color: #aaa;
       margin: auto;
-      font-size: 0.9rem;
-      line-height: 1.6;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      line-height: 1.7;
     }
 
-    .empty-state span {
-      font-size: 2rem;
+    .empty-icon {
+      font-size: 1.5rem;
       display: block;
       margin-bottom: 8px;
+      opacity: 0.35;
     }
 
-    /* Chat bubbles */
+    /* Bubbles */
     .bubble-row {
       display: flex;
       align-items: flex-end;
       gap: 8px;
     }
 
-    .bubble-row.user  { flex-direction: row-reverse; }
-
-    .avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .avatar.bot  { background: #e8f0fe; color: #1a73e8; }
-    .avatar.user { background: #fce8e6; color: #c5221f; }
+    .bubble-row.user { flex-direction: row-reverse; }
 
     .bubble {
-      max-width: 70%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      font-size: 0.9rem;
-      line-height: 1.55;
+      max-width: 74%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.855rem;
+      line-height: 1.65;
     }
 
     .bubble.bot {
-      background: #f1f3f4;
-      color: #202124;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-bottom-left-radius: 4px;
     }
 
     .bubble.user {
-      background: #1a73e8;
-      color: white;
+      background: var(--accent);
+      color: #fff;
       border-bottom-right-radius: 4px;
     }
 
     .bubble.thinking {
-      color: #888;
-      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .dots span {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      margin: 0 2px 1px;
+      animation: blink 1.2s infinite;
+      vertical-align: middle;
+    }
+
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.85); }
+      40%           { opacity: 1;   transform: scale(1); }
     }
 
     /* Input row */
     .input-row {
       display: flex;
-      gap: 10px;
-      padding: 16px 28px;
-      border-top: 1px solid #e8eaed;
-      background: white;
+      gap: 8px;
+      padding: 14px 26px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
     }
 
-    .input-row input {
-      flex: 1;
-      padding: 11px 16px;
-      border: 1px solid #dadce0;
-      border-radius: 24px;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border 0.2s;
+    .input-row input[type="text"] {
+      border-radius: 10px;
     }
-
-    .input-row input:focus { border-color: #1a73e8; }
 
     .btn-send {
-      background: #1a73e8;
-      color: white;
+      background: var(--accent);
+      color: #fff;
       border: none;
-      border-radius: 50%;
-      width: 42px;
-      height: 42px;
-      font-size: 1.1rem;
+      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, opacity 0.2s;
+      transition: opacity 0.18s;
       flex-shrink: 0;
     }
 
-    .btn-send:hover   { background: #1558b0; }
-    .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-send:hover   { opacity: 0.85; }
+    .btn-send:disabled { opacity: 0.25; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -293,8 +362,11 @@
 
   <!-- Header -->
   <div class="header">
-    <h1>📄 PolicyPal</h1>
-    <p>Upload a policy document and chat with it using AI</p>
+    <div class="header-icon">📄</div>
+    <div class="header-text">
+      <h1>PolicyPal</h1>
+      <p>Chat with any policy document using AI</p>
+    </div>
   </div>
 
   <!-- Upload -->
@@ -305,28 +377,24 @@
     </div>
 
     <div class="upload-panel active" id="panelUrl">
-      <label>Document URL (PDF, DOCX, or EML)</label>
+      <label class="field-label">Document URL — PDF, DOCX, or EML</label>
       <div class="upload-row">
-        <input type="text" id="docUrl"
-          placeholder="https://example.com/policy.pdf" />
-        <button class="btn btn-primary" id="uploadBtnUrl" onclick="uploadDoc()">
-          Upload
-        </button>
+        <input type="text" id="docUrl" placeholder="https://example.com/policy.pdf" />
+        <button class="btn" id="uploadBtnUrl" onclick="uploadDoc()">Upload</button>
       </div>
     </div>
 
     <div class="upload-panel" id="panelFile">
-      <label>Select a PDF, DOCX, or EML file</label>
+      <label class="field-label">Select a file — PDF, DOCX, or EML</label>
       <div class="file-drop" id="fileDrop"
            ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
         <input type="file" id="fileInput" accept=".pdf,.docx,.eml" onchange="onFileChange(event)" />
-        Drag & drop a file here, or click to browse
+        <span class="file-drop-icon">↑</span>
+        <div class="file-drop-text">Drag & drop here, or click to browse</div>
         <div class="file-name" id="fileName"></div>
       </div>
       <div class="file-upload-row">
-        <button class="btn btn-primary" id="uploadBtnFile" onclick="uploadFile()" style="margin-left:auto">
-          Upload
-        </button>
+        <button class="btn" id="uploadBtnFile" onclick="uploadFile()">Upload</button>
       </div>
     </div>
 
@@ -337,7 +405,7 @@
   <div class="chat-section">
     <div class="chat-window" id="chatWindow">
       <div class="empty-state">
-        <span>💬</span>
+        <span class="empty-icon">💬</span>
         Upload a document above to start chatting
       </div>
     </div>
@@ -346,9 +414,7 @@
         placeholder="Ask a question about your document..."
         onkeydown="if(event.key==='Enter') sendMessage()"
         disabled />
-      <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>
-        ➤
-      </button>
+      <button class="btn-send" id="sendBtn" onclick="sendMessage()" disabled>➤</button>
     </div>
   </div>
 
@@ -396,7 +462,7 @@
     const url = document.getElementById('docUrl').value.trim();
     if (!url) return setStatus('Please enter a document URL.', 'error');
 
-    setStatus('Uploading and processing document... this may take 20–30 seconds.', 'loading');
+    setStatus('Processing document — this may take 20–30 seconds…', 'loading');
     setUploadDisabled(true);
 
     try {
@@ -411,7 +477,7 @@
 
       onIngested(data.session_id);
     } catch (err) {
-      setStatus(`❌ ${err.message}`, 'error');
+      setStatus(`${err.message}`, 'error');
       setUploadDisabled(false);
     }
   }
@@ -420,7 +486,7 @@
   async function uploadFile() {
     if (!selectedFile) return setStatus('Please select a file first.', 'error');
 
-    setStatus('Uploading and processing document... this may take 20–30 seconds.', 'loading');
+    setStatus('Processing document — this may take 20–30 seconds…', 'loading');
     setUploadDisabled(true);
 
     try {
@@ -437,7 +503,7 @@
 
       onIngested(data.session_id);
     } catch (err) {
-      setStatus(`❌ ${err.message}`, 'error');
+      setStatus(`${err.message}`, 'error');
       setUploadDisabled(false);
     }
   }
@@ -445,10 +511,10 @@
   function onIngested(id) {
     sessionId = id;
     chatHistory = [];
-    setStatus('✅ Document ready! Start asking questions below.', 'success');
+    setStatus('Document ready — start asking questions below.', 'success');
     enableChat();
     clearChat();
-    addBubble('bot', "Hi! I've read your document. What would you like to know?");
+    addBubble('bot', "I've read your document. What would you like to know?");
   }
 
   // ── Chat ────────────────────────────────────────────────
@@ -463,7 +529,7 @@
     setSendDisabled(true);
 
     addBubble('user', message);
-    const thinkingEl = addBubble('bot', 'Thinking...', true);
+    const thinkingEl = addThinkingBubble();
 
     try {
       const res = await fetch('/api/chat', {
@@ -479,13 +545,13 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Chat failed');
 
-      thinkingEl.classList.remove('thinking');
+      thinkingEl.className = 'bubble bot';
       thinkingEl.textContent = data.answer;
       chatHistory = data.chat_history;
 
     } catch (err) {
-      thinkingEl.classList.remove('thinking');
-      thinkingEl.textContent = `Sorry, something went wrong: ${err.message}`;
+      thinkingEl.className = 'bubble bot';
+      thinkingEl.textContent = `Something went wrong: ${err.message}`;
     } finally {
       isLoading = false;
       setSendDisabled(false);
@@ -494,35 +560,41 @@
   }
 
   // ── Helpers ─────────────────────────────────────────────
-  function addBubble(role, text, isThinking = false) {
-    const window = document.getElementById('chatWindow');
-
-    // Remove empty state if present
-    const empty = window.querySelector('.empty-state');
+  function addBubble(role, text) {
+    const win = document.getElementById('chatWindow');
+    const empty = win.querySelector('.empty-state');
     if (empty) empty.remove();
 
     const row = document.createElement('div');
     row.className = `bubble-row ${role}`;
 
-    const avatar = document.createElement('div');
-    avatar.className = `avatar ${role}`;
-    avatar.textContent = role === 'bot' ? 'AI' : 'You';
-
     const bubble = document.createElement('div');
-    bubble.className = `bubble ${role}${isThinking ? ' thinking' : ''}`;
+    bubble.className = `bubble ${role}`;
     bubble.textContent = text;
 
-    row.appendChild(avatar);
     row.appendChild(bubble);
-    window.appendChild(row);
-    window.scrollTop = window.scrollHeight;
+    win.appendChild(row);
+    win.scrollTop = win.scrollHeight;
+    return bubble;
+  }
 
-    return bubble; // return so we can update "Thinking..." later
+  function addThinkingBubble() {
+    const win = document.getElementById('chatWindow');
+    const row = document.createElement('div');
+    row.className = 'bubble-row bot';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble bot thinking';
+    bubble.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>';
+
+    row.appendChild(bubble);
+    win.appendChild(row);
+    win.scrollTop = win.scrollHeight;
+    return bubble;
   }
 
   function clearChat() {
-    const w = document.getElementById('chatWindow');
-    w.innerHTML = '';
+    document.getElementById('chatWindow').innerHTML = '';
   }
 
   function setStatus(msg, type) {

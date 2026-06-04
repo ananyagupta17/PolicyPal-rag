@@ -53,6 +53,32 @@
       background: #fafafa;
     }
 
+    .upload-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    .upload-tab {
+      padding: 7px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: white;
+      color: #555;
+      border: none;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .upload-tab.active { background: #1a73e8; color: white; }
+
+    .upload-panel { display: none; }
+    .upload-panel.active { display: block; }
+
     .upload-section label {
       display: block;
       font-size: 0.85rem;
@@ -66,7 +92,7 @@
       gap: 10px;
     }
 
-    .upload-row input {
+    .upload-row input[type="text"] {
       flex: 1;
       padding: 10px 14px;
       border: 1px solid #dadce0;
@@ -76,7 +102,47 @@
       transition: border 0.2s;
     }
 
-    .upload-row input:focus { border-color: #1a73e8; }
+    .upload-row input[type="text"]:focus { border-color: #1a73e8; }
+
+    .file-drop {
+      border: 2px dashed #dadce0;
+      border-radius: 8px;
+      padding: 22px;
+      text-align: center;
+      color: #888;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .file-drop:hover, .file-drop.drag-over {
+      border-color: #1a73e8;
+      background: #f0f6ff;
+      color: #1a73e8;
+    }
+
+    .file-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .file-drop .file-name {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #1a73e8;
+      font-weight: 600;
+    }
+
+    .file-upload-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
 
     .btn {
       padding: 10px 20px;
@@ -233,14 +299,37 @@
 
   <!-- Upload -->
   <div class="upload-section">
-    <label>Document URL (PDF, DOCX, or EML)</label>
-    <div class="upload-row">
-      <input type="text" id="docUrl"
-        placeholder="https://example.com/policy.pdf" />
-      <button class="btn btn-primary" id="uploadBtn" onclick="uploadDoc()">
-        Upload
-      </button>
+    <div class="upload-tabs">
+      <button class="upload-tab active" id="tabUrl" onclick="switchTab('url')">Paste URL</button>
+      <button class="upload-tab" id="tabFile" onclick="switchTab('file')">Upload File</button>
     </div>
+
+    <div class="upload-panel active" id="panelUrl">
+      <label>Document URL (PDF, DOCX, or EML)</label>
+      <div class="upload-row">
+        <input type="text" id="docUrl"
+          placeholder="https://example.com/policy.pdf" />
+        <button class="btn btn-primary" id="uploadBtnUrl" onclick="uploadDoc()">
+          Upload
+        </button>
+      </div>
+    </div>
+
+    <div class="upload-panel" id="panelFile">
+      <label>Select a PDF, DOCX, or EML file</label>
+      <div class="file-drop" id="fileDrop"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.eml" onchange="onFileChange(event)" />
+        Drag & drop a file here, or click to browse
+        <div class="file-name" id="fileName"></div>
+      </div>
+      <div class="file-upload-row">
+        <button class="btn btn-primary" id="uploadBtnFile" onclick="uploadFile()" style="margin-left:auto">
+          Upload
+        </button>
+      </div>
+    </div>
+
     <div class="status" id="uploadStatus"></div>
   </div>
 
@@ -269,8 +358,40 @@
   let sessionId = null;
   let chatHistory = [];
   let isLoading = false;
+  let selectedFile = null;
 
-  // ── Upload ──────────────────────────────────────────────
+  // ── Tab switching ───────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('tabUrl').classList.toggle('active', tab === 'url');
+    document.getElementById('tabFile').classList.toggle('active', tab === 'file');
+    document.getElementById('panelUrl').classList.toggle('active', tab === 'url');
+    document.getElementById('panelFile').classList.toggle('active', tab === 'file');
+    setStatus('', '');
+  }
+
+  // ── File drag/drop helpers ──────────────────────────────
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('fileDrop').classList.add('drag-over');
+  }
+  function onDragLeave(e) {
+    document.getElementById('fileDrop').classList.remove('drag-over');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('fileDrop').classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  }
+  function onFileChange(e) {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  }
+  function setFile(file) {
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+  }
+
+  // ── Upload via URL ──────────────────────────────────────
   async function uploadDoc() {
     const url = document.getElementById('docUrl').value.trim();
     if (!url) return setStatus('Please enter a document URL.', 'error');
@@ -288,18 +409,46 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Upload failed');
 
-      sessionId = data.session_id;
-      chatHistory = [];
-
-      setStatus('✅ Document ready! Start asking questions below.', 'success');
-      enableChat();
-      clearChat();
-      addBubble('bot', "Hi! I've read your document. What would you like to know?");
-
+      onIngested(data.session_id);
     } catch (err) {
       setStatus(`❌ ${err.message}`, 'error');
       setUploadDisabled(false);
     }
+  }
+
+  // ── Upload via file ─────────────────────────────────────
+  async function uploadFile() {
+    if (!selectedFile) return setStatus('Please select a file first.', 'error');
+
+    setStatus('Uploading and processing document... this may take 20–30 seconds.', 'loading');
+    setUploadDisabled(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/upload-file', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+      onIngested(data.session_id);
+    } catch (err) {
+      setStatus(`❌ ${err.message}`, 'error');
+      setUploadDisabled(false);
+    }
+  }
+
+  function onIngested(id) {
+    sessionId = id;
+    chatHistory = [];
+    setStatus('✅ Document ready! Start asking questions below.', 'success');
+    enableChat();
+    clearChat();
+    addBubble('bot', "Hi! I've read your document. What would you like to know?");
   }
 
   // ── Chat ────────────────────────────────────────────────
@@ -383,8 +532,10 @@
   }
 
   function setUploadDisabled(val) {
-    document.getElementById('uploadBtn').disabled = val;
+    document.getElementById('uploadBtnUrl').disabled = val;
+    document.getElementById('uploadBtnFile').disabled = val;
     document.getElementById('docUrl').disabled = val;
+    document.getElementById('fileInput').disabled = val;
   }
 
   function enableChat() {

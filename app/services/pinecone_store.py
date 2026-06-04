@@ -86,15 +86,8 @@ def store_embeddings_for_text(text: str, source_id: str) -> int:
     return len(vectors)
 
 
-def ingest_document(document_url: str) -> str:
-    """
-    Full ingestion pipeline for a document URL.
-    Skips re-ingestion if the document was already uploaded before.
-    Returns the source_id (used as namespace for querying).
-    """
-    source_id = generate_source_id(document_url)
-
-    # Check if this namespace already has vectors
+def _check_and_ingest(source_id: str, file_path_or_url: str) -> str:
+    """Shared logic: skip if already ingested, otherwise extract + embed + store."""
     try:
         stats = index.describe_index_stats()
         namespaces = stats.get("namespaces", {})
@@ -104,11 +97,31 @@ def ingest_document(document_url: str) -> str:
     except Exception as e:
         print(f"Could not check index stats: {e}")
 
-    # Fresh ingest
     clear_namespace(source_id)
-    text = extract_text(document_url)
+    text = extract_text(file_path_or_url)
     if not text or not text.strip():
         raise ValueError("No extractable text found in the document.")
 
     store_embeddings_for_text(text, source_id=source_id)
     return source_id
+
+
+def ingest_document(document_url: str) -> str:
+    """
+    Full ingestion pipeline for a document URL.
+    Skips re-ingestion if the document was already uploaded before.
+    Returns the source_id (used as namespace for querying).
+    """
+    source_id = generate_source_id(document_url)
+    return _check_and_ingest(source_id, document_url)
+
+
+def ingest_file(local_path: str) -> str:
+    """
+    Full ingestion pipeline for a locally saved file (e.g. from a multipart upload).
+    source_id is derived from md5 of file content so the same file never gets re-ingested.
+    Returns the source_id (used as namespace for querying).
+    """
+    with open(local_path, "rb") as f:
+        source_id = hashlib.md5(f.read()).hexdigest()
+    return _check_and_ingest(source_id, local_path)

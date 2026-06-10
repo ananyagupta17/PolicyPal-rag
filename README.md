@@ -1,139 +1,140 @@
-# PolicyPal 🤖📄
+# PolicyPal
 
-A conversational RAG (Retrieval Augmented Generation) system that lets you upload any policy document and chat with it in natural language.
+**Conversational document QA over any policy file — powered by RAG, Gemini, and Pinecone.**
 
-Built with FastAPI, Gemini AI, and Pinecone.
+Upload a PDF, DOCX, or EML. Ask questions in plain English. Get answers grounded strictly in the document, with full conversation memory.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116-green)
 ![Pinecone](https://img.shields.io/badge/Pinecone-Serverless-purple)
-![Gemini](https://img.shields.io/badge/Gemini-AI-orange)
+![Gemini](https://img.shields.io/badge/Gemini-2.5-orange)
 
-## Demo
+---
 
-Upload a document URL → ask questions → get answers with full conversation memory.
+## What it does
 
-Supports PDF, DOCX, and EML files.
+Most LLMs can't reliably answer questions about long documents — they hit context limits, hallucinate, or lose precision on dense legal/policy text.
 
-## How It Works
+PolicyPal solves this with a **Retrieval Augmented Generation (RAG)** pipeline: instead of feeding the entire document to the model, it embeds the document into a vector store, retrieves only the most semantically relevant chunks per question, and grounds the LLM's answer strictly in those excerpts. The result is accurate, fast, and cost-efficient at any document length.
 
-PolicyPal uses a RAG pipeline:
+---
+
+## Architecture
+
 ```
-INGEST (on upload):
-Document URL → extract text → chunk into segments →
-embed with Gemini → store vectors in Pinecone
+INGEST
+Document (URL or file upload)
+  → extract text (PyMuPDF / python-docx / email)
+  → recursive chunking (1200 chars, 250 overlap)
+  → embed each chunk (Gemini gemini-embedding-001, 3072-dim)
+  → upsert to Pinecone under a per-document namespace
 
-QUERY (on each message):
-User question → embed question → find similar chunks in Pinecone →
-send chunks + chat history → Gemini LLM → answer
+QUERY
+User question
+  → embed question (same model)
+  → cosine similarity search in Pinecone (top-k=8)
+  → inject retrieved chunks + conversation history into prompt
+  → Gemini gemini-2.5-flash generates a grounded answer
 ```
 
-The key insight: instead of feeding the entire document to an LLM
-(expensive, slow, hits context limits), we only send the most
-relevant excerpts for each question. This makes answers faster,
-cheaper, and more accurate.
+---
+
+## Key Design Decisions
+
+**Namespace-per-document isolation** — each document is hashed (MD5) to a unique Pinecone namespace. Multiple documents coexist without polluting each other's retrieval results, and the same hash serves as the session ID passed to the frontend.
+
+**Idempotent ingestion** — before embedding, the pipeline checks if the namespace already has vectors. If it does, the upload is a no-op. This eliminates redundant Gemini API calls on duplicate uploads.
+
+**Stateless chat API** — conversation history is owned by the client and sent with each request. The server is fully stateless, which keeps it horizontally scalable with no session storage.
+
+**Hallucination guardrails** — the prompt explicitly instructs the model to respond with "I could not find this information in the document" rather than infer or guess. The model is given only retrieved excerpts, never the full document.
+
+**Dual ingestion modes** — documents can be ingested via a public URL (downloaded server-side) or via direct multipart file upload. Both paths converge on the same chunking and embedding pipeline.
+
+---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Backend | FastAPI |
-| Embeddings | Gemini `gemini-embedding-001` (3072-dim) |
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI + uvicorn |
+| Embeddings | Gemini `gemini-embedding-001` — 3072-dim vectors |
 | LLM | Gemini `gemini-2.5-flash` |
-| Vector DB | Pinecone Serverless |
-| Chunking | LangChain RecursiveCharacterTextSplitter |
-| Document Parsing | PyMuPDF, python-docx |
+| Vector DB | Pinecone Serverless (AWS us-east-1, cosine similarity) |
+| Chunking | LangChain `RecursiveCharacterTextSplitter` |
+| Document Parsing | PyMuPDF (PDF), python-docx (DOCX), stdlib email (EML) |
 | Frontend | Vanilla HTML/CSS/JS |
 
-## Project Structure
-```
-PolicyPal-rag/
-├── main.py                      # FastAPI app entry point
-├── frontend/
-│   └── index.html               # Chat UI
-├── app/
-│   ├── api/
-│   │   └── routes.py            # /upload and /chat endpoints
-│   ├── services/
-│   │   ├── document_parser.py   # PDF/DOCX/EML text extraction
-│   │   ├── text_chunker.py      # Recursive text splitting
-│   │   ├── embedding.py         # Gemini embedding API
-│   │   ├── pinecone_store.py    # Vector storage and ingestion
-│   │   ├── retrieval.py         # Semantic search
-│   │   └── pipeline_qa.py       # RAG orchestration
-│   └── utils/
-│       └── prompt_builder.py    # Prompt engineering
-├── .env.example                 # Environment variables template
-└── requirements.txt             # Dependencies
-```
+---
 
-## Setup
+## API
 
-### 1. Clone the repo
-```bash
-git clone https://github.com/ananyagupta17/PolicyPal-rag.git
-cd PolicyPal-rag
-```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Set up environment variables
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your API keys:
-```
-GEMINI_API_KEY=your_gemini_api_key_here
-PINECONE_API_KEY=your_pinecone_api_key_here
-```
-
-Get your keys here:
-- Gemini: [aistudio.google.com](https://aistudio.google.com) → Get API Key (free)
-- Pinecone: [app.pinecone.io](https://app.pinecone.io) → API Keys (free tier)
-
-### 4. Run
-```bash
-uvicorn main:app --reload
-```
-
-Open [http://localhost:8000](http://localhost:8000)
-
-## API Endpoints
-
-### POST `/api/upload`
-Ingests a document from a URL into Pinecone.
+### `POST /api/upload`
+Ingest a document from a URL.
 ```json
 Request:  { "document_url": "https://example.com/policy.pdf" }
-Response: { "session_id": "abc123...", "message": "Document ingested successfully." }
+Response: { "session_id": "a3f9...", "message": "Document ingested successfully." }
 ```
 
-### POST `/api/chat`
-Answers a question about the uploaded document.
+### `POST /api/upload-file`
+Ingest a document via direct file upload (`multipart/form-data`).
+```
+form-data: file=<PDF|DOCX|EML>
+Response:  { "session_id": "b7c2...", "message": "Document ingested successfully." }
+```
+
+### `POST /api/chat`
+Answer a question against the ingested document.
 ```json
 Request: {
-  "session_id": "abc123...",
-  "message": "What is the waiting period?",
+  "session_id": "a3f9...",
+  "message": "What is the waiting period for pre-existing conditions?",
   "chat_history": []
 }
 Response: {
-  "answer": "The waiting period is 30 days...",
+  "answer": "The waiting period is 36 months...",
   "chat_history": [...]
 }
 ```
 
-## Key Design Decisions
+---
 
-**Namespace per document** — each document gets its own Pinecone namespace using an md5 hash of the URL. This means multiple documents can coexist without polluting each other's search results.
+## Setup
 
-**Skip re-ingestion** — if the same URL is uploaded again, the app detects existing vectors and skips the embedding step entirely, saving API quota.
+```bash
+git clone https://github.com/ananyagupta17/PolicyPal-rag.git
+cd PolicyPal-rag
+pip install -r requirements.txt
+cp .env.example .env          # add GEMINI_API_KEY and PINECONE_API_KEY
+uvicorn main:app --reload
+```
 
-**Chat history** — conversation history is passed with every request so Gemini can handle follow-up questions like "tell me more about that" naturally.
+Open `http://localhost:8000`.
 
-**Prompt engineering** — strict instructions prevent hallucination. The model is explicitly told to say "I could not find this" rather than guess.
+**Get free API keys:**
+- Gemini — [aistudio.google.com](https://aistudio.google.com)
+- Pinecone — [app.pinecone.io](https://app.pinecone.io)
+
+---
+
+## Project Structure
+
+```
+app/
+├── api/routes.py              # REST endpoints + request/response models
+├── services/
+│   ├── pipeline_qa.py         # RAG orchestration (retrieve → prompt → generate)
+│   ├── pinecone_store.py      # Vector upsert, namespace management, ingestion
+│   ├── retrieval.py           # Semantic search over Pinecone
+│   ├── embedding.py           # Gemini embedding calls + in-memory cache
+│   ├── document_parser.py     # PDF / DOCX / EML text extraction
+│   └── text_chunker.py        # LangChain recursive splitting
+└── utils/prompt_builder.py    # Prompt assembly (context + history + question)
+main.py                        # FastAPI app, CORS, static file serving
+sample_docs/                   # Sample policy files for testing
+```
+
+---
 
 ## License
 
